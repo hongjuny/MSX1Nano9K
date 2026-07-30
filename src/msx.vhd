@@ -63,7 +63,10 @@ entity msx is
 		hw_version_g	: std_logic_vector(7 downto 0)	:= X"00";
 		video_opt_g		: integer								:= 0;		-- 0 = no dblscan, 1 = dblscan configurable, 2 = dblscan always enabled, 3 = no dblscan and external palette
 		ramsize_g		: integer								:= 512;	-- 512, 2048 or 8192
-		hw_hashwds_g	: std_logic								:= '0'	-- 0 = Software disk-change, 1 = Hardware disk-change
+		hw_hashwds_g	: std_logic								:= '0';	-- 0 = Software disk-change, 1 = Hardware disk-change
+		use_ipl_g		: boolean								:= true	-- false = omit ipl_rom (SD-card IPL bootstrap, 8KB/4 BSRAM
+		                                                      -- blocks) entirely - only for boards with no SD card and no
+		                                                      -- other use for the IPL slot (e.g. TangNano9k's flash-XIP boot)
 	);
 	port (
 		-- Clocks
@@ -179,7 +182,10 @@ entity msx is
 		-- DEBUG
 		D_wait_o			: out std_logic;
 		D_slots_o		: out std_logic_vector( 7 downto 0);
-		D_ipl_en_o		: out std_logic
+		D_ipl_en_o		: out std_logic;
+		D_sp_o			: out std_logic_vector(15 downto 0);
+		D_cpu_addr_o	: out std_logic_vector(15 downto 0);
+		D_vdp_wr_n_o	: out std_logic
 	);
 
 end entity;
@@ -345,16 +351,22 @@ begin
 		refresh_n_o	=> rfsh_n_s,
 		halt_n_o		=> open,
 		busrq_n_i	=> '1',
-		busak_n_o	=> open
+		busak_n_o	=> open,
+		sp_o			=> D_sp_o
 	);
 
-	-- IPL ROM
-	ipl: entity work.ipl_rom
-	port map (
-		clk		=> clock_i,
-		addr		=> iplrom_addr_s,
-		data		=> d_from_iplrom_s
-	);
+	-- IPL ROM (SD-card bootstrap - see use_ipl_g)
+	gen_ipl: if use_ipl_g generate
+		ipl: entity work.ipl_rom
+		port map (
+			clk		=> clock_i,
+			addr		=> iplrom_addr_s,
+			data		=> d_from_iplrom_s
+		);
+	end generate;
+	gen_no_ipl: if not use_ipl_g generate
+		d_from_iplrom_s <= (others => '1');
+	end generate;
 
 	-- VDP
 	vdp: entity work.vdp18_core
@@ -659,8 +671,8 @@ begin
 			d_from_iplrom_s			when iplrom_cs_s = '1'		else
 			ram_data_i					when iplram_cs_s = '1'		else
 			rom_data_i					when brom_cs_s = '1'			else
-			ram_data_i					when extrom_cs_s = '1'		else
-			ram_data_i					when xb2rom_cs_s = '1'		else
+			ram_data_i					when use_rom_in_ram_s = '1' and extrom_cs_s = '1'		else
+			ram_data_i					when use_rom_in_ram_s = '1' and xb2rom_cs_s = '1'		else
 			ram_data_i					when ram_cs_s = '1'			else
 			ram_data_i					when nxt_rom_cs_s = '1'		else
 			d_from_exp1_s				when exp1_has_data_s = '1'	else
@@ -830,5 +842,7 @@ begin
 	D_slots_o		<= pio_port_a_s;
 	D_wait_o			<= vdp_wait_s;
 	D_ipl_en_o		<= ipl_en_s;
+	D_cpu_addr_o	<= cpu_addr_s;
+	D_vdp_wr_n_o	<= vdp_wr_n_s;
 
 end architecture;

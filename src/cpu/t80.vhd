@@ -112,7 +112,8 @@ entity T80 is
         TS          : out std_logic_vector(2 downto 0);
         IntCycle_n  : out std_logic;
         IntE        : out std_logic;
-        Stop        : out std_logic
+        Stop        : out std_logic;
+        SP_o        : out std_logic_vector(15 downto 0)  -- DEBUG: current SP register
     );
 end T80;
 
@@ -247,6 +248,8 @@ architecture rtl of T80 is
     signal XYbit_undoc      : std_logic;
 
 begin
+
+    SP_o <= std_logic_vector(SP);
 
     mcode : T80_MCode
         generic map(

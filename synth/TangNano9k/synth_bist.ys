@@ -1,0 +1,12 @@
+read_verilog psram_bist_netlist.v
+read_verilog psram_controller.v
+read_verilog psram_ram_bridge.v
+
+synth_gowin -top psram_bist_top -json psram_bist.json
+
+techmap -map dlnc2dff.v
+async2sync
+simplemap
+clean
+
+write_json psram_bist.json

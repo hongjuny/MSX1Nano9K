@@ -94,7 +94,8 @@ entity T80a is
 		refresh_n_o	: out   std_logic;
 		halt_n_o		: out   std_logic;
 		busrq_n_i	: in    std_logic;
-		busak_n_o	: out   std_logic
+		busak_n_o	: out   std_logic;
+		sp_o			: out   std_logic_vector(15 downto 0)  -- DEBUG: current SP register
 	);
 end T80a;
 
@@ -175,7 +176,8 @@ begin
 			DO				=> data_out_s,
 			MC				=> m_cycle_s,
 			TS				=> t_state_s,
-			IntCycle_n	=> int_cycle_n_s
+			IntCycle_n	=> int_cycle_n_s,
+			SP_o			=> sp_o
 		);
 
 	process (clock_i, clock_en_i)

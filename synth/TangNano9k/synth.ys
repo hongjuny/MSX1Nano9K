@@ -1,0 +1,18 @@
+read_verilog msx_vhdl_netlist.v
+read_verilog dvi_tx.v
+read_verilog hdmi_rpll.v
+read_verilog hdmi_clkdiv.v
+
+# 1. 기본 Gowin 기술 합성 실행
+synth_gowin -top top_tangnano9k -json msx_tangnano9k.json
+
+# 2. DLNC 셀을 dlnc2dff.v 매핑 규칙에 따라 DFFC로 치환
+#    (주의: '-D DLNC'는 verilog `define`일 뿐 매핑 파일을 지정하지 않으므로
+#     DLNC 셀이 전혀 치환되지 않았음. 반드시 -map으로 파일을 지정해야 함)
+techmap -map dlnc2dff.v
+async2sync
+simplemap
+clean
+
+# 3. JSON 출력 업데이트
+write_json msx_tangnano9k.json
