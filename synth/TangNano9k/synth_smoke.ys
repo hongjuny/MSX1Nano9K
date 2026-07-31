@@ -1,0 +1,4 @@
+read_verilog uart_smoketest_netlist.v
+synth_gowin -top uart_smoketest_top -json uart_smoketest.json
+clean
+write_json uart_smoketest.json

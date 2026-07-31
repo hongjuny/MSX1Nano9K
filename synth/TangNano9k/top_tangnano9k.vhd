@@ -128,6 +128,7 @@ architecture behavior of top_tangnano9k is
     signal vga_hsync_n_s   : std_logic;
     signal vga_vsync_n_s   : std_logic;
     signal vga_blank_s     : std_logic;
+    signal vga_dbg_s       : std_logic_vector(3 downto 0);
     signal vga_de_s        : std_logic;
     signal dvi_red_s       : std_logic_vector(7 downto 0);
     signal dvi_green_s     : std_logic_vector(7 downto 0);
@@ -237,7 +238,8 @@ begin
             video_opt_g  => 3,
             ramsize_g    => 512,
             hw_hashwds_g => '0',
-            use_ipl_g    => false  -- no SD card on this board; frees 4 BSRAM blocks (ipl_rom)
+            use_ipl_g    => false,  -- no SD card on this board; frees 4 BSRAM blocks (ipl_rom)
+            use_scc_g    => false   -- frees ~1 BSRAM block (escci wave table); revisit once video is stable
         )
         port map (
             clock_i        => clock_master_s,
@@ -425,7 +427,8 @@ begin
             O_HSYNC    => vga_hsync_n_s,
             O_VSYNC    => vga_vsync_n_s,
             O_COLOR    => vga_col_s,
-            O_BLANK    => vga_blank_s
+            O_BLANK    => vga_blank_s,
+            O_DBG      => vga_dbg_s
         );
 
     -- =========================================================================
@@ -528,9 +531,9 @@ begin
     -- and this needs all 6 LEDs to read out a 0-63 value directly.
     leds_n_o(0) <= not pll_locked_s;
     leds_n_o(1) <= not btn_reset_n;
-    leds_n_o(2) <= not dbg_ram_write_toggle_s;
-    leds_n_o(3) <= not dbg_vram_written_s;
-    leds_n_o(4) <= not dbg_rom_advanced_s;
-    leds_n_o(5) <= not dbg_heartbeat_cnt_s(23);
+    leds_n_o(2) <= not vga_dbg_s(3);  -- TEMP: capture-skip toggle (no free slot at line start)
+    leds_n_o(3) <= not vga_dbg_s(2);  -- TEMP: FIFO-drop toggle (should never fire, 8 entries/8 slots)
+    leds_n_o(4) <= not vga_dbg_s(0);  -- TEMP: spare, currently tied '0' (always off)
+    leds_n_o(5) <= not vga_dbg_s(1);  -- TEMP: no-match safety-net reset toggle (observational only)
 
 end architecture behavior;
